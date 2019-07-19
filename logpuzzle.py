@@ -40,7 +40,8 @@ def read_urls(filename):
     extracting the hostname from the filename itself.
     Screens out duplicate urls and returns the urls sorted into
     increasing order."""
-    
+    # prefix = "".join(filename.rsplit("_", 1))
+    prefix = "http://code.google.com"
     with open(filename) as opened:
         puzzle_urls = []
         for line in opened:
@@ -48,7 +49,7 @@ def read_urls(filename):
             if match_object:
                 puzzle_path = match_object.group(1)
                 if "puzzle" in puzzle_path:
-                    domain = "http://code.google.com" + puzzle_path 
+                    domain = prefix + puzzle_path 
                     puzzle_urls.append(domain)
     puzzle_urls = list(set(puzzle_urls))
     return sorted(puzzle_urls, key=key_sort)
@@ -73,8 +74,7 @@ def download_images(img_urls, dest_dir):
             print("Downloading Image: {}".format(img_url))
             img_dest = os.path.join(dest_dir, "img{}".format(i))
             urllib.urlretrieve(img_url, img_dest)
-            f.write("<img src={}.format({}{})>")
-            f.write(img_url)
+            f.write('<img src="{}">'.format("img{}".format(i)))
             f.write("</img>")
         f.write("</body></html>")
          
