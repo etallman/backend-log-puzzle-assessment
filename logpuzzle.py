@@ -1,4 +1,5 @@
 #!/usr/bin/env python2
+
 """
 Logpuzzle exercise
 
@@ -19,8 +20,25 @@ Here's what a puzzle url looks like:
 import os
 import re
 import sys
-import urllib
 import argparse
+import urllib
+
+# Sample Apache
+# 10.254.254.28 - - [06/Aug/2007:00:14:08 -0700] "GET /foo/talks/ HTTP/1.1"
+# 200 5910 "-" "Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.8.1.4) Gecko/
+# 20070515 Firefox/2.0.0.4"#
+
+
+def key_sort(url):
+    match_obj = re.search(r"([a]-\w+)|([p]-\w+)-(\w+).jpg", url)
+    if match_obj.group(1):
+        return match_obj.group(1)
+    if match_obj.group(3):
+        return match_obj.group(3)
+    # if match_obj.group(2):
+    #     return match_obj.group(2)
+    else:
+        return url
 
 
 def read_urls(filename):
@@ -28,8 +46,19 @@ def read_urls(filename):
     extracting the hostname from the filename itself.
     Screens out duplicate urls and returns the urls sorted into
     increasing order."""
-    # +++your code here+++
-    pass
+    # prefix = "".join(filename.rsplit("_", 1))
+    prefix = "http://code.google.com"
+    with open(filename) as opened:
+        puzzle_urls = []
+        for line in opened:
+            match_object = re.search(r'GET (\S+)', line)
+            if match_object:
+                puzzle_path = match_object.group(1)
+                if "puzzle" in puzzle_path:
+                    domain = prefix + puzzle_path
+                    puzzle_urls.append(domain)
+    puzzle_urls = list(set(puzzle_urls))
+    return sorted(puzzle_urls, key=key_sort)
 
 
 def download_images(img_urls, dest_dir):
@@ -41,13 +70,26 @@ def download_images(img_urls, dest_dir):
     Creates the directory if necessary.
     """
     # +++your code here+++
-    pass
+    if not os.path.exists(dest_dir):
+        os.mkdir(dest_dir)
+    filename = os.path.join(dest_dir, "index.html")
+
+    with open(filename, 'w') as f:
+        f.write("<html><body>")
+        for i, img_url in enumerate(img_urls):
+            print("Downloading Image: {}".format(img_url))
+            img_dest = os.path.join(dest_dir, "img{}".format(i))
+            urllib.urlretrieve(img_url, img_dest)
+            f.write('<img src="{}">'.format("img{}".format(i)))
+            f.write("</img>")
+        f.write("</body></html>")
 
 
 def create_parser():
     """Create an argument parser object"""
     parser = argparse.ArgumentParser()
-    parser.add_argument('-d', '--todir',  help='destination directory for downloaded images')
+    parser.add_argument(
+        '-d', '--todir',  help='destination directory for downloaded images')
     parser.add_argument('logfile', help='apache logfile to extract urls from')
 
     return parser
@@ -55,13 +97,13 @@ def create_parser():
 
 def main(args):
     """Parse args, scan for urls, get images from urls"""
-    parser = create_parser()
 
-    if not args:
+    parser = create_parser()
+    parsed_args = parser.parse_args(args)
+
+    if not parsed_args:
         parser.print_usage()
         sys.exit(1)
-
-    parsed_args = parser.parse_args(args)
 
     img_urls = read_urls(parsed_args.logfile)
 
