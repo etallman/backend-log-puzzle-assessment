@@ -23,18 +23,24 @@ import sys
 import argparse
 import urllib
 
-#Sample Apache
-#10.254.254.28 - - [06/Aug/2007:00:14:08 -0700] "GET /foo/talks/ HTTP/1.1"
+# Sample Apache
+# 10.254.254.28 - - [06/Aug/2007:00:14:08 -0700] "GET /foo/talks/ HTTP/1.1"
 # 200 5910 "-" "Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.8.1.4) Gecko/
 # 20070515 Firefox/2.0.0.4"#
 
+
 def key_sort(url):
-    match_obj = re.search(r"a-(\w+)\.jpg", url)
-    if match_obj:
+    match_obj = re.search(r"([a]-\w+)|([p]-\w+)-(\w+).jpg", url)
+    if match_obj.group(1):
         return match_obj.group(1)
+    if match_obj.group(3):
+        return match_obj.group(3)
+    # if match_obj.group(2):
+    #     return match_obj.group(2)
     else:
         return url
-        
+
+
 def read_urls(filename):
     """Returns a list of the puzzle urls from the given log file,
     extracting the hostname from the filename itself.
@@ -49,7 +55,7 @@ def read_urls(filename):
             if match_object:
                 puzzle_path = match_object.group(1)
                 if "puzzle" in puzzle_path:
-                    domain = prefix + puzzle_path 
+                    domain = prefix + puzzle_path
                     puzzle_urls.append(domain)
     puzzle_urls = list(set(puzzle_urls))
     return sorted(puzzle_urls, key=key_sort)
@@ -67,7 +73,7 @@ def download_images(img_urls, dest_dir):
     if not os.path.exists(dest_dir):
         os.mkdir(dest_dir)
     filename = os.path.join(dest_dir, "index.html")
- 
+
     with open(filename, 'w') as f:
         f.write("<html><body>")
         for i, img_url in enumerate(img_urls):
@@ -77,7 +83,7 @@ def download_images(img_urls, dest_dir):
             f.write('<img src="{}">'.format("img{}".format(i)))
             f.write("</img>")
         f.write("</body></html>")
-         
+
 
 def create_parser():
     """Create an argument parser object"""
@@ -91,15 +97,13 @@ def create_parser():
 
 def main(args):
     """Parse args, scan for urls, get images from urls"""
-    
+
     parser = create_parser()
     parsed_args = parser.parse_args(args)
-    
+
     if not parsed_args:
         parser.print_usage()
         sys.exit(1)
-
-    
 
     img_urls = read_urls(parsed_args.logfile)
 
@@ -107,7 +111,7 @@ def main(args):
         download_images(img_urls, parsed_args.todir)
     else:
         print('\n'.join(img_urls))
-    
+
 
 if __name__ == '__main__':
     main(sys.argv[1:])
